@@ -62,4 +62,98 @@ def gerar_sinal_compra_venda(verde_atual, verm_atual, spread):
         logger.error(f"Erro ao gerar sinal: {e}")
         return ("ERRO", "❌", "error")
 
-# ==========================
+# ============================================================================
+# VALIDAÇÃO DE LEILÃO (08:55-09:00)
+# ============================================================================
+
+def validar_leilao(verde_count, vermelha_count, target_date, ts_855):
+    """
+    Valida se leilão está habilitado.
+    Leilão habilitado se |Verde - Vermelha| > 8 em 08:55
+    """
+    try:
+        diff = 0
+        
+        if not verde_count.empty:
+            dados_verde = verde_count[verde_count.index <= ts_855]
+            if not dados_verde.empty:
+                diff = abs(dados_verde.iloc[-1])
+        
+        if not vermelha_count.empty:
+            dados_verm = vermelha_count[vermelha_count.index <= ts_855]
+            if not dados_verm.empty:
+                diff = abs(dados_verm.iloc[-1])
+        
+        if diff and diff > 8:
+            return True
+        
+        return False
+    
+    except Exception as e:
+        logger.warning(f"Erro ao validar leilão: {e}")
+        return False
+
+# ============================================================================
+# CLASSIFICAÇÃO DE REGIME (VIX)
+# ============================================================================
+
+def get_regime_mercado(vix_atual):
+    """Classifica o regime de mercado baseado no VIX"""
+    try:
+        if vix_atual is None:
+            return "❓ Desconhecido"
+        
+        if vix_atual < VIX_CALMO:
+            return "🟢 Calmo"
+        elif vix_atual < VIX_NORMAL:
+            return "🟡 Normal"
+        elif vix_atual < VIX_MODERADO:
+            return "🟠 Moderado"
+        elif vix_atual < VIX_ALTO:
+            return "🔴 Alto"
+        else:
+            return "🚨 Extremo"
+    
+    except Exception:
+        return "❓ Desconhecido"
+
+# ============================================================================
+# LABELS DE RORO
+# ============================================================================
+
+def gerar_label_roro(roro_atual):
+    """Gera label descritivo para RoRo"""
+    try:
+        if roro_atual > RORO_COMPRA:
+            return "📉 Dólar comprador — COMPRA WDO"
+        elif roro_atual < RORO_VENDA:
+            return "📈 Dólar vendedor — VENDA WDO"
+        else:
+            return "➡️ Neutro"
+    
+    except Exception:
+        return "➡️ Neutro"
+
+# ============================================================================
+# CARREGAMENTO DE HISTÓRICO
+# ============================================================================
+
+def load_historico_sinais():
+    """Carrega histórico de sinais do CSV"""
+    try:
+        if not os.path.exists(LOG_FILE):
+            return pd.DataFrame()
+        
+        df = pd.read_csv(LOG_FILE)
+        
+        # Converte timestamp para datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        
+        # Ordena por timestamp descendente
+        df = df.sort_values('timestamp', ascending=False)
+        
+        return df
+    
+    except Exception as e:
+        logger.error(f"Erro ao carregar histórico: {e}")
+        return pd.DataFrame()
