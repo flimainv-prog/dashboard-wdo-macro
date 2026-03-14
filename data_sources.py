@@ -10,10 +10,7 @@ import time
 BRT = pytz.timezone('America/Sao_Paulo')
 CACHE_TTL_SECONDS = 300
 
-# 
 # TICKERS REAIS
-# 
-
 ATIVOS_VERDE = [
     'DX-Y.NYB', '^VIX', 'GC=F', '^TNX', 'USDMXN=X', 'USDZAR=X', 'CL=F'
 ]
@@ -21,10 +18,6 @@ ATIVOS_VERDE = [
 ATIVOS_VERMELHA = [
     '^GSPC', 'QQQ', 'EWZ', '^BVSP', 'EURUSD=X', 'GBPUSD=X', 'BTC-USD'
 ]
-
-# 
-# FETCH COM RETRY
-# 
 
 def fetch_com_retry(ticker, period='5d', interval='5m', tentativas=2):
     """Tenta buscar dados com retry automático"""
@@ -35,14 +28,10 @@ def fetch_com_retry(ticker, period='5d', interval='5m', tentativas=2):
             if not df.empty:
                 return df
         except Exception as e:
-            if i &lt; tentativas - 1:
+            if i < tentativas - 1:
                 time.sleep(1)
             continue
     return pd.DataFrame()
-
-# 
-# VIX ATUAL
-# 
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_vix():
@@ -57,10 +46,6 @@ def get_vix():
     except:
         return None
 
-# 
-# DATAS DISPONÍVEIS
-# 
-
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def get_wdo_dates():
     """Retorna últimas 30 datas úteis"""
@@ -69,15 +54,11 @@ def get_wdo_dates():
         if raw.empty:
             end_date = datetime.now(BRT).date()
             return [(end_date - timedelta(days=i)) for i in range(1, 31)]
-        dates = [d.date() for d in raw.index if d.date().weekday() &lt; 5]
+        dates = [d.date() for d in raw.index if d.date().weekday() < 5]
         return sorted(dates, reverse=True)[:30]
     except:
         end_date = datetime.now(BRT).date()
         return [(end_date - timedelta(days=i)) for i in range(1, 31)]
-
-# 
-# DOWNLOAD DE TODOS OS ATIVOS
-# 
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def fetch_todos(tickers_list, target_date_str, candle_ref):
@@ -85,7 +66,6 @@ def fetch_todos(tickers_list, target_date_str, candle_ref):
     target = pd.Timestamp(target_date_str).date()
     
     try:
-        # Baixa com período maior para garantir a data
         raw = yf.download(
             tickers_list, period="60d", interval="5m",
             progress=False, prepost=True, auto_adjust=True, 
@@ -98,10 +78,8 @@ def fetch_todos(tickers_list, target_date_str, candle_ref):
         if not isinstance(raw.columns, pd.MultiIndex):
             return pd.DataFrame()
         
-        # Converte para BRT
         raw.index = raw.index.tz_convert(BRT) if raw.index.tz is None else raw.index.tz_convert(BRT)
         
-        # Filtra só a data desejada
         result = {}
         for ticker in tickers_list:
             try:
@@ -117,10 +95,6 @@ def fetch_todos(tickers_list, target_date_str, candle_ref):
     except Exception as e:
         return pd.DataFrame()
 
-# 
-# CONTAGEM DE ATIVOS
-# 
-
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def contar_ativos(tickers_list, target_date_str, candle_ref, threshold=3):
     """Conta ativos em alta vs. abertura"""
@@ -133,7 +107,7 @@ def contar_ativos(tickers_list, target_date_str, candle_ref, threshold=3):
     for ticker in df.columns:
         try:
             s = df[ticker].dropna()
-            if s.empty or len(s) &lt; 2:
+            if s.empty or len(s) < 2:
                 continue
             
             abertura = float(s.values[0])
@@ -150,29 +124,23 @@ def contar_ativos(tickers_list, target_date_str, candle_ref, threshold=3):
     
     return (pd.concat(series_list, axis=1) > threshold).sum(axis=1).astype(float)
 
-# 
-# LINHA AZUL v2 SIMPLIFICADA
-# 
-
 @st.cache_data(ttl=CACHE_TTL_SECONDS)
 def fetch_linha_azul_v2(target_date_str, candle_ref):
     """Calcula Linha Azul v2 simplificada"""
     target = pd.Timestamp(target_date_str).date()
     
     try:
-        # Baixa componentes principais
         tickers = ['USDMXN=X', 'DX-Y.NYB', '^VIX', '^TNX']
         df = fetch_todos(tickers, target_date_str, candle_ref)
         
         if df.empty:
             return pd.Series(dtype=float)
         
-        # Calcula z-score e agrega
         scores = []
         for col in df.columns:
             try:
                 s = df[col].dropna()
-                if len(s) &lt; 2:
+                if len(s) < 2:
                     continue
                 
                 media = s.rolling(window=10, min_periods=1).mean()
@@ -185,20 +153,13 @@ def fetch_linha_azul_v2(target_date_str, candle_ref):
         if not scores:
             return pd.Series(dtype=float)
         
-        # Média ponderada simples
         linha_azul = pd.concat(scores, axis=1).mean(axis=1)
-        
-        # Suaviza com EMA manual
         ema = linha_azul.ewm(span=10, adjust=False).mean()
         
         return ema.round(2)
     
     except Exception as e:
         return pd.Series(dtype=float)
-
-# 
-# RORO SCORE
-# 
 
 def fetch_roro_score(verde_count, vermelha_count):
     """RoRo simples"""
@@ -212,10 +173,6 @@ def fetch_roro_score(verde_count, vermelha_count):
         return score_roro
     except:
         return pd.Series(dtype=float)
-
-# 
-# ÚLTIMO CANDLE
-# 
 
 def ultimo_candle_real():
     """Retorna timestamp do último candle real"""
