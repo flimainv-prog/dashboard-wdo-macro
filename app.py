@@ -35,7 +35,7 @@ st.set_page_config(
 
 
 st.title("🟢🔴 Dashboard WDO Macro v2")
-st.sidebar.caption("⏱️ Auto-refresh: 5min | v2.0 - Modularizado")
+
 
 # ============================================================================
 # SIDEBAR - CONTROLES
