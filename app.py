@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from streamlit_autorefresh import st_autorefresh
+
 
 # Importa todos os módulos
 from config import BRT, AUTO_REFRESH_INTERVAL_MS, CACHE_TTL_SECONDS, get_feriados_br
@@ -32,7 +32,7 @@ st.set_page_config(
 # AUTO-REFRESH (5 minutos)
 # ============================================================================
 
-count = st_autorefresh(interval=AUTO_REFRESH_INTERVAL_MS, limit=None, key="macro_autorefresh")
+
 
 st.title("🟢🔴 Dashboard WDO Macro v2")
 st.sidebar.caption("⏱️ Auto-refresh: 5min | v2.0 - Modularizado")
