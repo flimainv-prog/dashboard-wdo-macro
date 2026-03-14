@@ -1,7 +1,7 @@
 # indicators.py
 import pandas as pd
 import numpy as np
-import pandas_ta as ta
+
 import json
 from config import (
     RSI_LENGTH, PESOS_SCORE, THRESHOLD_ALTA, 
@@ -9,24 +9,25 @@ from config import (
 )
 
 # ============================================================================
-# RSI
+# RSI (Cálculo Manual)
 # ============================================================================
 
 def calcular_rsi(serie, length=RSI_LENGTH):
-    """Calcula RSI de uma série"""
+    """Calcula RSI manualmente"""
     try:
         if len(serie) < length:
             return None
         
-        rsi = ta.rsi(serie, length=length)
+        delta = serie.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=length).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=length).mean()
         
-        if rsi is None or rsi.dropna().empty:
-            return None
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
         
         return float(rsi.iloc[-1])
     
-    except Exception as e:
-        logger.warning(f"Erro ao calcular RSI: {e}")
+    except Exception:
         return None
 
 # ============================================================================
