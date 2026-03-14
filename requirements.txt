@@ -1,0 +1,8 @@
+streamlit==1.40.0
+streamlit-autorefresh==0.0.5
+pandas==2.2.0
+numpy==1.24.0
+yfinance==0.2.36
+pandas-ta==0.3.14
+plotly==5.23.0
+pytz==2024.1
